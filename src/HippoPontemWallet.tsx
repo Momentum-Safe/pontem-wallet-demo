@@ -11,6 +11,8 @@ import {
 } from './components';
 import { localStorageKey } from './consts';
 
+import { MSafe } from './MSafe';
+
 export const HippoPontemWallet = () => {
   const {
     account,
@@ -103,6 +105,8 @@ export const HippoPontemWallet = () => {
       {connected && (
         <SendTransaction sender={currentAddress} onSendTransaction={handleSendTransaction} />
       )}
+
+      { connected && (<MSafe />) }
 
       {!connected && <Hint hint={'connect wallet'}/>}
 

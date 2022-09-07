@@ -53,7 +53,9 @@ module.exports = {
     ],
     // It's not accurate in the monorepo style
     "import/no-extraneous-dependencies": "off",
-    "@typescript-eslint/no-explicit-any": "off"
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/indent": "off",
+    "spaced-comment" : "off",
   },
   overrides: [
     {
