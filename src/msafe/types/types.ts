@@ -1,4 +1,4 @@
-import { HexString, TransactionBuilder, TxnBuilderTypes } from "aptos";
+import { HexString, TransactionBuilder, TransactionBuilderMultiEd25519, TxnBuilderTypes } from "aptos";
 import { BCS } from "aptos";
 import {
   Ed25519Signature,
@@ -58,6 +58,57 @@ export class Transaction {
 
   getSigningMessage() {
     return TransactionBuilder.getSigningMessage(this.raw);
+  }
+}
+
+export class TransactionSigned {
+  raw: TxnBuilderTypes.SignedTransaction;
+
+  constructor(raw: TxnBuilderTypes.SignedTransaction) {
+    this.raw = raw;
+  }
+
+  static deserialize(bcsSignedTx: Buffer): TransactionSigned {
+    const deserializer = new Deserializer(bcsSignedTx); // skip prefix, see TransactionBuilder.getSigningMessage
+    return new TransactionSigned(
+      TxnBuilderTypes.SignedTransaction.deserialize(deserializer)
+    );
+  }
+
+  getSigningMessage() {
+    return TransactionBuilder.getSigningMessage(this.raw.raw_txn);
+  }
+  isMultiSigned() {
+    return this.raw.authenticator instanceof TxnBuilderTypes.TransactionAuthenticatorMultiEd25519;
+  }
+  getAuthenticator() {
+    const authenticator = this.raw.authenticator;
+    if (authenticator instanceof TxnBuilderTypes.TransactionAuthenticatorEd25519){
+      return authenticator;
+    }
+    if (authenticator instanceof TxnBuilderTypes.TransactionAuthenticatorMultiEd25519){
+      return authenticator;
+    }
+    throw "unsppourt";
+  }
+  getSignature() {
+    if(this.isMultiSigned()) throw "it's a multisigned tx";
+    return this.getAuthenticator().signature as TxnBuilderTypes.Ed25519Signature;
+  }
+
+  getPubkey() {
+    if(this.isMultiSigned()) throw "it's a multisigned tx";
+    return this.getAuthenticator().public_key as TxnBuilderTypes.Ed25519PublicKey;
+  }
+
+  getSignatures() {
+    if(!this.isMultiSigned()) throw "it's not a multisigned tx";
+    return this.getAuthenticator().signature as TxnBuilderTypes.MultiEd25519Signature;
+  }
+
+  getPubkeys() {
+    if(!this.isMultiSigned()) throw "it's not a multisigned tx";
+    return this.getAuthenticator().public_key as TxnBuilderTypes.MultiEd25519PublicKey;
   }
 }
 
