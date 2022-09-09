@@ -73,6 +73,7 @@ export class MultiSig_Creator {
                 BCS.bcsToBytes(signature),
             ])
             .sign(signer);
+        console.log('🚀 ~ file: multisig_creator.ts ~ line 76 ~ MultiSig_Creator ~ init_wallet_creation ~ signedTxn', signedTxn)
         const res = await provider.sendSignedTransactionAndWait(signedTxn);
         console.log(res.hash, res.success, res.vm_status);
     }
