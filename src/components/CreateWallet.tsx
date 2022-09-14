@@ -59,14 +59,14 @@ export const CreateWallet = () => {
       type_arguments: [],
       arguments: ["test"],
     };
-    const transactionRequest = await window.martian.generateTransaction(
-      sender,
-      payload,
-      {
-        sender: multiaddr.hex(),
-        // sequence_number: 0,
-      }
+
+    const registerTx = mMomentumSafe.gen_register_tx(
+       chainId,
+       0,
+       multiaddr,
+       walletName
     );
+    const transactionRequest = BCS.bcsToBytes(registerTx.build().raw).toString();
     console.log(
       "🚀 ~ file: CreateWallet.tsx ~ line 54 ~ onCreation ~ transactionRequest",
       transactionRequest
@@ -83,7 +83,9 @@ export const CreateWallet = () => {
     );
 
     const forceSignTxn = initSignedTxn.split(",").map((i: string) => Number(i));
-
+    (window as any).stx = TransactionSigned.deserialize(
+      Buffer.from(forceSignTxn)
+    );
     const signature = TransactionSigned.deserialize(
       Buffer.from(forceSignTxn)
     ).getSignature();
