@@ -38,7 +38,7 @@ export class WebAccount {
       "🚀 ~ file: webAccount.ts ~ line 38 ~ WebAccount ~ publicKey ~ this.wallet",
       this.wallet
     );
-    return new HexString(this.wallet.account!.publicKey!.toString());
+    return new HexString(this.wallet.account?.publicKey?.toString() || "");
   }
 
   publicKeyBytes(): Bytes {
@@ -76,14 +76,14 @@ export class WebAccount {
   }
 
   async getSigData(
-    txn: any
+    txn: Transaction
   ): Promise<
     [
       signing: TxnBuilderTypes.SigningMessage,
       signature: TxnBuilderTypes.Ed25519Signature[]
     ]
   > {
-    const signingMessage = txn;
+    const signingMessage = txn.getSigningMessage();
     const sig = await this.signFn(signingMessage);
     return [signingMessage, [sig]];
   }

@@ -30,6 +30,10 @@ export const CreateWallet = () => {
   const initBalanceVal = useRef(null);
   const onAddPubkey = () => {
     const val = (inputVal.current as any).value as string;
+    console.log(
+      "🚀 ~ file: CreateWallet.tsx ~ line 33 ~ onAddPubkey ~ val",
+      val
+    );
     if (val.length != 64) return;
     if (pubkeys.find((a) => a.noPrefix() == val)) return;
     setPubkeys([...pubkeys, new HexString(val)]);
@@ -48,6 +52,10 @@ export const CreateWallet = () => {
       threshold,
       nonce
     );
+    console.log(
+      "🚀 ~ file: CreateWallet.tsx ~ line 51 ~ onCreation ~ multiaddr",
+      multiaddr.hex()
+    );
     // const registerTx = mMomentumSafe.gen_register_tx(
     //   chainId,
     //   0,
@@ -57,29 +65,25 @@ export const CreateWallet = () => {
     const payload = {
       function: `${MSAFE_ADDRESS_STRING}::MomentumSafe::register`,
       type_arguments: [],
-      arguments: ["test"],
+      arguments: [Array.from(Buffer.from(walletName))],
     };
     const transactionRequest = await window.martian.generateTransaction(
       sender,
       payload,
       {
-        sender: multiaddr.hex(),
-        // sequence_number: 0,
+        // sequence_number: "0",
+        sender: multiaddr,
+        max_gas_amount: "12000",
+        gas_unit_price: "1",
+        gas_currency_code: "XUS",
+        // Unix timestamp, in seconds + 10 seconds
+        expiration_timestamp_secs: (
+          Math.floor(Date.now() / 1000) + 600
+        ).toString(),
       }
     );
-    console.log(
-      "🚀 ~ file: CreateWallet.tsx ~ line 54 ~ onCreation ~ transactionRequest",
-      transactionRequest
-    );
-    // const [signingMessage, [signature]] = await signer.getSigData(
-    //   transactionRequest.split(",").map((i: string) => Number(i))
-    // );
     const initSignedTxn: string = await window.martian.signTransaction(
       transactionRequest
-    );
-    console.log(
-      "🚀 ~ file: CreateWallet.tsx ~ line 80 ~ onCreation ~ initSignedTxn",
-      initSignedTxn
     );
 
     const forceSignTxn = initSignedTxn.split(",").map((i: string) => Number(i));

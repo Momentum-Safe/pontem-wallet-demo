@@ -2,4 +2,5 @@
 
 interface Window {
   martian: any;
+  pontem: any;
 }
