@@ -4,9 +4,7 @@ import { useContract } from "../hooks/useContract";
 import { HexString } from "aptos";
 import { MultiSigCreation, MultiSig_Creator } from "../msafe/contract";
 import { Transaction } from "../msafe/types/types";
-import { Ed25519Signature } from "aptos/dist/generated";
 
-import {Buffer} from "buffer/"; // the trailing slash is important!
 const HexBuffer = (hex: string) => Buffer.from(hex.startsWith('0x') ? hex.slice(2) : hex, 'hex');
 
 export const CreationCard = ({
@@ -34,7 +32,7 @@ export const CreationCard = ({
         signatrues.push({key: signer.publicKey().hex(), value: Buffer.from(sig.value).toString('hex')})
     }
     console.log('sendMultisigTx');
-    await signer.sendMultisigTx(info.txn.payload, info.public_keys, MultiSig_Creator.noncePubKey(info.nonce), signatrues, info.threshold);
+    await signer.sendMultisigTx(info.txn.payload, info.public_keys, mCreator.noncePubKey(info.nonce), signatrues, info.threshold);
   }
   const onSign = async () => {
     console.log('onSign');

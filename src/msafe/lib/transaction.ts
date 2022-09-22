@@ -1,14 +1,14 @@
 import {BCS, HexString, TxnBuilderTypes} from "aptos";
-import {ChainId} from "aptos/dist/transaction_builder/aptos_types";
 import {Account, Transaction} from "../types/types";
+import { estimateTxDataGas } from "./gasEstimate";
 
 const COIN_MODULE = "0x1::coin";
 const TRANSFER_METHOD = "transfer";
 const APTOS_TOKEN = "0x1::aptos_coin::AptosCoin";
 
 // TODO: Use prophecy and gas analysis
-const DEFAULT_MAX_GAS = BigInt(2000);
-const DEFAULT_GAS_PRICE = BigInt(1);
+const DEFAULT_MAX_GAS = 2000n;
+const DEFAULT_GAS_PRICE = 100n;
 const DEFAULT_EXPIRATION = 10;
 
 abstract class AptosTxnBuilder {
@@ -54,11 +54,16 @@ abstract class AptosTxnBuilder {
         return this;
     }
 
-    build(): Transaction {
-        this._validateAndFix();
-        this.validateAndFix();
+    estimateDataGas(): bigint {
         const raw = this.makeRawTransaction();
-        return new Transaction(raw);
+        return estimateTxDataGas(BCS.bcsToBytes(raw).length);
+    }
+
+    build(): Transaction {
+        this.validateAndFix();
+        this._validateAndFix();
+        const raw = this.makeRawTransaction();
+        return new Transaction(raw, Buffer.from(BCS.bcsToBytes(raw)));
     }
 
     sign(signer: Account) {
@@ -75,14 +80,15 @@ abstract class AptosTxnBuilder {
         if (this._chainId === undefined) {
             throw new Error('When building transaction, chain ID must be specified');
         }
-        if (this._maxGas === undefined) {
-            this._maxGas = DEFAULT_MAX_GAS;
-        }
         if (this._gasPrice === undefined) {
             this._gasPrice = DEFAULT_GAS_PRICE;
         }
         if (this._expiration === undefined) {
             this._expiration = DEFAULT_EXPIRATION;
+        }
+        if (this._maxGas === undefined) {
+            this._maxGas = DEFAULT_MAX_GAS;
+            this._maxGas += this.estimateDataGas();
         }
     }
 
@@ -107,7 +113,7 @@ abstract class AptosTxnBuilder {
         return BigInt(Math.floor(Date.now() / 1000) + (this._expiration as number));
     }
 
-    private getChainId(): ChainId {
+    private getChainId(): TxnBuilderTypes.ChainId {
         return new TxnBuilderTypes.ChainId(this._chainId as number);
     }
 }
@@ -163,9 +169,7 @@ export class AptosModuleTxnBuilder extends AptosTxnBuilder {
     }
 
     payload(): TxnBuilderTypes.TransactionPayload {
-        return new TxnBuilderTypes.TransactionPayloadModuleBundle(
-            new TxnBuilderTypes.ModuleBundle([new TxnBuilderTypes.Module(this._module.toUint8Array())]),
-        );
+        throw "unsupport";
     }
 }
 

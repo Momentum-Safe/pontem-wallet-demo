@@ -3,34 +3,30 @@ import { Network } from "../lib/config";
 import { AptosCoinTransferTxnBuilder, AptosEntryTxnBuilder } from "../lib/transaction";
 import { Account } from "../types/types";
 import { BCS, HexString, TxnBuilderTypes, } from "aptos";
-import { Buffer } from "buffer/"; // the trailing slash is important!
 import {
-    Ed25519Signature,
-    SigningMessage,
-} from "aptos/dist/transaction_builder/aptos_types";
-import {
-    SimpleMap, vector
+    SimpleMap
 } from "./move_type";
 
 const provider = new Provider(Network.Devnet);
 
-
-export type CreateWalletTxn = {
+type CreateWalletTxn = {
     payload: string,
-    signatures: SimpleMap<string, string>,
+    signatures: SimpleMap<string>,
 }
 
 export type MultiSigCreation = {
-    public_keys: vector<string>,
+    owners: string[],
+    public_keys: string[],
     nonce: number,
     threshold: number,
     txn: CreateWalletTxn
 }
 
-export type PendingMultiSigCreations = {
-    nonces: SimpleMap<string, string>,
-    creations: SimpleMap<string, MultiSigCreation>
+type PendingMultiSigCreations = {
+    nonces: SimpleMap<string>,
+    creations: SimpleMap<MultiSigCreation>
 };
+
 
 export function buildMultiTxs(chainID: number, sn: number, from: HexString, to: HexString, amount: number) {
     return (new AptosCoinTransferTxnBuilder()).from(from)
@@ -42,25 +38,21 @@ export function buildMultiTxs(chainID: number, sn: number, from: HexString, to: 
 }
 
 export class MultiSig_Creator {
+    static ModuleName = 'creator';
     constructor(public readonly address: HexString) {
     }
 
-    async init_wallet_creation(signer: Account, pubkeys: HexString[], threshold: number, init_balance: number, payload: SigningMessage, signature: Ed25519Signature) {
+    async init_wallet_creation(signer: Account, owners: HexString[], threshold: number, init_balance: number, payload: TxnBuilderTypes.SigningMessage, signature: TxnBuilderTypes.Ed25519Signature) {
         const chainID = await provider.getChainId();
         const sn = await provider.getSequenceNumber(signer);
         const txModuleBuilder = new AptosEntryTxnBuilder();
-        //const address = (addr: HexString) => TxnBuilderTypes.AccountAddress.fromHex(addr);
-        const pubkey = (key: HexString) => ({
-            serialize(serializer: BCS.Serializer) {
-                serializer.serializeBytes(key.toUint8Array());
-            }
-        });
+        const address = (addr: HexString) => TxnBuilderTypes.AccountAddress.fromHex(addr);
 
         const serializer = new BCS.Serializer();
-        BCS.serializeVector(pubkeys.map(key => pubkey(key)), serializer);
+        BCS.serializeVector(owners.map(owner => address(owner)), serializer);
         const signedTxn = await txModuleBuilder
             .contract(this.address)
-            .module('Creator')
+            .module(MultiSig_Creator.ModuleName)
             .method('init_wallet_creation')
             .from(signer.address())
             .chainId(chainID)
@@ -73,18 +65,19 @@ export class MultiSig_Creator {
                 BCS.bcsToBytes(signature),
             ])
             .sign(signer);
+        console.log('🚀 ~ file: multisig_creator.ts ~ line 76 ~ MultiSig_Creator ~ init_wallet_creation ~ signedTxn', signedTxn)
         const res = await provider.sendSignedTransactionAndWait(signedTxn);
         console.log(res.hash, res.success, res.vm_status);
     }
 
-    async submit_signature(signer: Account, multisig: HexString, pk_index: number, signature: Ed25519Signature) {
+    async submit_signature(signer: Account, multisig: HexString, pk_index: number, signature: TxnBuilderTypes.Ed25519Signature) {
         const chainID = await provider.getChainId();
         const sn = await provider.getSequenceNumber(signer);
         const txModuleBuilder = new AptosEntryTxnBuilder();
 
         const signedTxn = await txModuleBuilder
             .contract(this.address)
-            .module('Creator')
+            .module(MultiSig_Creator.ModuleName)
             .method('submit_signature')
             .from(signer.address())
             .chainId(chainID)
@@ -101,7 +94,7 @@ export class MultiSig_Creator {
 
 
     async getAllPendingCreations() {
-        const pendings = await provider.backend.getAccountResource(this.address, `${this.address.hex()}::Creator::PendingMultiSigCreations`);
+        const pendings = await provider.backend.getAccountResource(this.address, `${this.address.hex()}::${MultiSig_Creator.ModuleName}::PendingMultiSigCreations`);
         return pendings.data as PendingMultiSigCreations;
     }
 
@@ -119,14 +112,15 @@ export class MultiSig_Creator {
     }
 
     // convert a nonce to public key
-    static noncePubKey(nonce: number) {
+    noncePubKey(nonce: number) {
         const pubKey = Buffer.alloc(TxnBuilderTypes.Ed25519PublicKey.LENGTH);
-        pubKey.writeUInt32LE(nonce, 0);
+        Buffer.from(this.address.toUint8Array()).copy(pubKey, 0, 0, 16);
+        pubKey.writeUInt32LE(nonce, 16);
         return new TxnBuilderTypes.Ed25519PublicKey(pubKey);
     }
 
     // MomentumSafe public key is a blend of owners and a nonce (as address)
-    static computeMultiSigAddress(pubkeys: HexString[], threshold: number, nonce: number): HexString {
+    computeMultiSigAddress(pubkeys: HexString[], threshold: number, nonce: number): HexString {
 
         const publicKeys: TxnBuilderTypes.Ed25519PublicKey[] = [];
         pubkeys.forEach((pubkey) => {

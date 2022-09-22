@@ -2,7 +2,7 @@ import {Provider} from "../lib/provider";
 import {Network} from "../lib/config";
 import { AptosEntryTxnBuilder} from "../lib/transaction";
 import {Account} from "../types/types";
-import { HexString} from "aptos";
+import { HexString, BCS} from "aptos";
 
 const provider = new Provider(Network.Devnet);
 
@@ -10,11 +10,12 @@ type vector<T> = T[]
 type address = string
 
 type OwnerMomentumSafes = {
+    public_key: string,
     pendings: vector<address>,
     msafes: vector<address>
 };
-
 export class MultiSig_Registry {
+    static ModuleName = 'registry';
     constructor(public readonly address: HexString) {
     }
 
@@ -25,19 +26,24 @@ export class MultiSig_Registry {
 
         const signedTxn = await txModuleBuilder
             .contract(this.address)
-            .module('Registry')
+            .module(MultiSig_Registry.ModuleName)
             .method('register')
             .from(signer.address())
             .chainId(chainID)
             .sequenceNumber(sn)
+            .args([
+                BCS.bcsSerializeBytes(signer.publicKeyBytes())
+            ])
             .sign(signer);
-        console.log("sendSignedTransactionAndWait:", Buffer.from(signedTxn).toString('hex'));
+
+        console.log('---------------------:Registry::register', signer.address().hex(), signer.publicKey().noPrefix());
+
         const res = await provider.sendSignedTransactionAndWait(signedTxn);
         console.log(res.hash, res.success, res.vm_status);
     }
 
     async getOwnerMomentumSafes(multiSig: HexString): Promise<OwnerMomentumSafes> {
-        const ownerMomentumSafes = await provider.backend.getAccountResource(multiSig, `${this.address.hex()}::Registry::OwnerMomentumSafes`);
+        const ownerMomentumSafes = await provider.backend.getAccountResource(multiSig, `${this.address.hex()}::${MultiSig_Registry.ModuleName}::OwnerMomentumSafes`);
         return ownerMomentumSafes.data as OwnerMomentumSafes;
     }
 

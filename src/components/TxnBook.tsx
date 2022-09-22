@@ -15,7 +15,7 @@ export const TxnBook = ({
   address: HexString;
   info: Momentum;
 }) => {
-  const txnBook = info.txnBook;
+  const txnBook = info.txn_book;
   const signer = useWebWallet();
   const [mCreator, mMomentumSafe, mRegistry] = useContract();
   const [pendingInfo, setPendingInfo] = useState(

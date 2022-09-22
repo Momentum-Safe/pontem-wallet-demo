@@ -1,7 +1,5 @@
 import {AptosAccount, HexString, MaybeHexString, TransactionBuilderEd25519, TxnBuilderTypes} from "aptos";
-import {Ed25519Signature, SigningMessage} from "aptos/dist/transaction_builder/aptos_types";
 import {Account, MultiSigOwner, MultiSigWallet, SimpleAddress, Transaction} from "../types/types";
-import {Bytes} from "aptos/dist/transaction_builder/bcs";
 import * as SHA3 from "js-sha3";
 
 import { TransactionBuilder,BCS } from "aptos";
@@ -29,11 +27,11 @@ export class AccountImpl implements Account, MultiSigOwner {
         return this.account.pubKey();
     }
 
-    publicKeyBytes(): Bytes {
+    publicKeyBytes(): BCS.Bytes {
         return this.account.pubKey().toUint8Array();
     }
 
-    sign(txn: Transaction): Bytes {
+    sign(txn: Transaction): BCS.Bytes {
         const txnBuilder = new TransactionBuilderEd25519((message: TxnBuilderTypes.SigningMessage) => {
             return this.signFn(message);
         }, this.publicKey().toUint8Array());
@@ -45,7 +43,7 @@ export class AccountImpl implements Account, MultiSigOwner {
         return new TxnBuilderTypes.Ed25519Signature(sig.toUint8Array());
     }
 
-    getSigData(txn: Transaction): [signing: SigningMessage, signature: Ed25519Signature[]] {
+    getSigData(txn: Transaction): [signing: TxnBuilderTypes.SigningMessage, signature: TxnBuilderTypes.Ed25519Signature[]] {
         const signingMessage = txn.getSigningMessage();
         const sig = this.signFn(signingMessage);
         return [signingMessage, [sig]];
@@ -84,7 +82,7 @@ export class SimpleAddressImpl implements SimpleAddress {
         return this._publicKey;
     }
 
-    publicKeyBytes(): Bytes {
+    publicKeyBytes(): BCS.Bytes {
         return this._publicKey.toUint8Array();
     }
 }

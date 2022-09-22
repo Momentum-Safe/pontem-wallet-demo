@@ -16,10 +16,8 @@ export const MSafe = () => {
     const signer = useWebWallet();
     const updateCallback = useCallback(() => {
         console.log("updateCallback")
-        mRegistry.getOwnerMomentumSafes(signer.publicKeyAddress()).then(
+        mRegistry.getOwnerMomentumSafes(signer.address()).then(
             momentum=>{
-                console.log('momentum:', momentum, registryInfo);
-                const newInfo = 
                 setRegistryInfo({inited:true, registed:true, pending:momentum.pendings, owned:momentum.msafes})
             }
         ).catch(e=>{
@@ -34,7 +32,7 @@ export const MSafe = () => {
     const onRegister = async () => {
         console.log("register...")
         let acc = signer;
-        await mRegistry.fundAndCheck(acc, 2_000_000);
+        await mRegistry.fundAndCheck(acc, 2_000_000_000);
         await mRegistry.register(acc);
     }
     return <div>

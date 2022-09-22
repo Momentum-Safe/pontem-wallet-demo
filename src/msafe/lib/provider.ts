@@ -1,5 +1,5 @@
-import {AptosClient, FaucetClient} from "aptos";
-import {Bytes} from "aptos/dist/transaction_builder/bcs";
+import {AptosClient, FaucetClient, BCS} from "aptos";
+
 import {Default, Network} from "./config";
 import {AccountImpl, HexString} from "./account";
 import {Account, SimpleAddress} from "../types/types";
@@ -48,11 +48,12 @@ export class Provider {
         }
     }
 
-    async fundAccount(account: SimpleAddress, amount: number): Promise<void> {
+    async fundAccount(account: SimpleAddress | HexString, amount: number): Promise<void> {
         if (!this.faucet) {
             throw new Error("No faucet given. Funding failed");
         }
-        await this.faucet?.fundAccount(account.address(), amount);
+        const address = account instanceof HexString ? account : account.address();
+        await this.faucet?.fundAccount(address, amount);
     }
 
     // Only get the default coin at the moment
@@ -76,13 +77,10 @@ export class Provider {
         return this.backend.getChainId();
     }
 
-    async sendSignedTransactionAndWait(message: Bytes): Promise<Gen.Transaction_UserTransaction> {
-        console.log('submit');
+    async sendSignedTransactionAndWait(message: BCS.Bytes): Promise<Gen.Transaction_UserTransaction> {
         const res = await this.backend.submitSignedBCSTransaction(message);
-        console.log('wait');
         await this.backend.waitForTransaction(res.hash);
         const tx = (await this.getTransactionDetails(res.hash)) as Gen.Transaction_UserTransaction;
-        console.log('end');
         if (!tx.success) {
             console.log('tx:', tx);
             throw tx.vm_status;
@@ -90,7 +88,7 @@ export class Provider {
         return tx;
     }
 
-    async sendSignedTransactionAsync(message: Bytes): Promise<Gen.PendingTransaction> {
+    async sendSignedTransactionAsync(message: BCS.Bytes): Promise<Gen.PendingTransaction> {
         return await this.backend.submitSignedBCSTransaction(message);
     }
 

@@ -6,7 +6,6 @@ import { MultiSig_Creator } from "../msafe/contract";
 import { Transaction } from "../msafe/types/types";
 import { TransactionType, Info } from "../msafe/contract";
 
-import {Buffer} from "buffer/"; // the trailing slash is important!
 const HexBuffer = (hex: string) => Buffer.from(hex.startsWith('0x') ? hex.slice(2) : hex, 'hex');
 
 export const TxnCard = ({
@@ -21,7 +20,7 @@ export const TxnCard = ({
   txn: TransactionType;
 }) => {
   const signer = useWebWallet();
-  const [, mMomentumSafe, mRegistry] = useContract();
+  const [mCreator, mMomentumSafe, mRegistry] = useContract();
 
   const getSigData = async () => {
     console.log('getSigData');
@@ -38,7 +37,7 @@ export const TxnCard = ({
         signatrues.push({key: signer.publicKey().hex(), value: Buffer.from(sig.value).toString('hex')})
     }
     console.log('sendMultisigTx');
-    await signer.sendMultisigTx(txn.payload, info.public_keys, MultiSig_Creator.noncePubKey(Number(info.nonce)), signatrues, info.threshold);
+    await signer.sendMultisigTx(txn.payload, info.public_keys, mCreator.noncePubKey(Number(info.nonce)), signatrues, info.threshold);
   }
   const onSign = async () => {
     console.log('onSign');
@@ -52,7 +51,7 @@ export const TxnCard = ({
         <div>TxId: {txid}</div>
       {
         <div>
-        <div>sn: {txn.nonce}</div>
+        <div>sn: 'nonce'</div>
           public keys:
           <ul>
             {info.public_keys.map((pubkey, index) => (

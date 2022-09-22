@@ -7,7 +7,7 @@ import './styles.scss';
 import { TAptosCreateTx } from './types';
 import { camelCaseKeysToUnderscore } from './utils';
 import {
-  SendTransaction, Address, BasicModal, Hint,
+  Address, BasicModal, Hint,
 } from './components';
 import { localStorageKey } from './consts';
 
@@ -100,11 +100,7 @@ export const HippoPontemWallet = () => {
       {!connected && <button className='w-button' onClick={onModalOpen}>Connect wallet</button>}
       {connected && <button className='w-button' onClick={handleDisconnect}>Disconnect wallet</button>}
 
-      <Address walletName={currentAdapterName} address={currentAddress} />
-
-      {connected && (
-        <SendTransaction sender={currentAddress} onSendTransaction={handleSendTransaction} />
-      )}
+      <Address walletName={currentAdapterName} address={currentAddress?.toString()} />
 
       { connected && (<MSafe />) }
 

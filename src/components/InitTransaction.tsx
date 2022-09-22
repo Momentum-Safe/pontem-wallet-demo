@@ -7,7 +7,6 @@ import {
   Info,
 } from "../msafe/contract";
 
-import { Buffer } from "buffer/"; // the trailing slash is important!
 const HexBuffer = (hex: string) =>
   Buffer.from(hex.startsWith("0x") ? hex.slice(2) : hex, "hex");
 
@@ -40,7 +39,6 @@ export const InitTransaction = ({
     mMomentumSafe.init_transaction(
       signer,
       address,
-      sn,
       pk_index,
       signingMessage,
       signature
